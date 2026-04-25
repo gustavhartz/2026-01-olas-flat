@@ -1,0 +1,190 @@
+[
+  {
+    "name": "mainnet",
+    "chainId": "1",
+    "contracts": [
+      {
+        "name": "DonatorBlacklist",
+        "artifact": "abis/0.8.18/DonatorBlacklist.json",
+        "address": "0xE85791B18F5df42163092Acc5C9da1c479AFEa9d"
+      },
+      {
+        "name": "Tokenomics",
+        "artifact": "abis/0.8.30/Tokenomics.json",
+        "address": "0x1ce191601e7f2777EEB797149d6e65aE40dF0e93"
+      },
+      {
+        "name": "TokenomicsProxy",
+        "artifact": "abis/0.8.18/TokenomicsProxy.json",
+        "address": "0xc096362fa6f4A4B1a9ea68b1043416f3381ce300"
+      },
+      {
+        "name": "Treasury",
+        "artifact": "abis/0.8.18/Treasury.json",
+        "address": "0xa0DA53447C0f6C4987964d8463da7e6628B30f82"
+      },
+      {
+        "name": "GenericBondCalculator",
+        "artifact": "abis/0.8.18/GenericBondCalculator.json",
+        "address": "0x1521918961bDBC9Ed4C67a7103D5999e4130E6CB"
+      },
+      {
+        "name": "Dispenser",
+        "artifact": "abis/0.8.25/Dispenser.json",
+        "address": "0x5650300fCBab43A0D7D02F8Cb5d0f039402593f0"
+      },
+      {
+        "name": "Depository",
+        "artifact": "abis/0.8.20/Depository.json",
+        "address": "0xfF8697d8d2998d6AA2e09B405795C6F4BEeB0C81"
+      },
+      {
+        "name": "EthereumDepositProcessor",
+        "artifact": "abis/0.8.25/EthereumDepositProcessor.json",
+        "address": "0x15CD7fAeE048c7673aB818C9e582630F1a924593"
+      },
+      {
+        "name": "PolygonDepositProcessorL1",
+        "artifact": "abis/0.8.30/PolygonDepositProcessorL1.json",
+        "address": "0x7EB5824Bb78e971284e2140059f8755B3d2BB525"
+      },
+      {
+        "name": "GnosisDepositProcessorL1",
+        "artifact": "abis/0.8.30/GnosisDepositProcessorL1.json",
+        "address": "0x48d4631f24dAce505c04D5A39458BED209e80A3c"
+      },
+      {
+        "name": "ArbitrumDepositProcessorL1",
+        "artifact": "abis/0.8.30/ArbitrumDepositProcessorL1.json",
+        "address": "0xFceFB015372e84FC465Cf2778889ee231a6E2e67"
+      },
+      {
+        "name": "OptimismDepositProcessorL1",
+        "artifact": "abis/0.8.30/OptimismDepositProcessorL1.json",
+        "address": "0x990aBa4b05adc3761EfAf38FB871b93C7b162D03"
+      },
+      {
+        "name": "OptimismDepositProcessorL1",
+        "artifact": "abis/0.8.30/OptimismDepositProcessorL1.json",
+        "address": "0x16d24D9A9c73133262d2Db83e1bB34FF7cB952Da"
+      },
+      {
+        "name": "WormholeDepositProcessorL1",
+        "artifact": "abis/0.8.30/WormholeDepositProcessorL1.json",
+        "address": "0x24150C763aBC34e8b8630C6570d2DbA265d8020A"
+      },
+      {
+        "name": "OptimismDepositProcessorL1",
+        "artifact": "abis/0.8.28/OptimismDepositProcessorL1.json",
+        "address": "0x6A5F38aAdCc1c049E39D80147b64a9Ff947d208B"
+      }
+    ]
+  },
+  {
+    "name": "polygon",
+    "chainId": "137",
+    "contracts": [
+      {
+        "name": "PolygonTargetDispenserL2",
+        "artifact": "abis/0.8.30/PolygonTargetDispenserL2.json",
+        "address": "0x17d96ba4532fe91809326092fE4D5606A7B7a0d8"
+      }
+    ]
+  },
+  {
+    "name": "gnosis",
+    "chainId": "100",
+    "contracts": [
+      {
+        "name": "GnosisTargetDispenserL2",
+        "artifact": "abis/0.8.30/GnosisTargetDispenserL2.json",
+        "address": "0x5b6c538C7b2E0b44Fa8A3B7a0532EF797b07d0E9"
+      },
+      {
+        "name": "BalancerPriceOracle",
+        "artifact": "abis/0.8.28/BalancerPriceOracle.json",
+        "address": "0xFa4dD5CE7A99E86a45a45250ca4EB18Ba3d16187"
+      },
+      {
+        "name": "BuyBackBurnerBalancer",
+        "artifact": "abis/0.8.28/BuyBackBurnerBalancer.json",
+        "address": "0x47Cb42216f08AB8E69F1321ACfEFd435b3c36943"
+      },
+      {
+        "name": "BuyBackBurnerProxy",
+        "artifact": "abis/0.8.28/BuyBackBurnerProxy.json",
+        "address": "0x153196110040A0c729227C603Db3A6c6D91851B2"
+      }
+    ]
+  },
+  {
+    "name": "arbitrumOne",
+    "chainId": "42161",
+    "contracts": [
+      {
+        "name": "ArbitrumTargetDispenserL2",
+        "artifact": "abis/0.8.30/ArbitrumTargetDispenserL2.json",
+        "address": "0x5953f21495BD9aF1D78e87bb42AcCAA55C1e896C"
+      }
+    ]
+  },
+  {
+    "name": "optimism",
+    "chainId": "10",
+    "contracts": [
+      {
+        "name": "OptimismTargetDispenserL2",
+        "artifact": "abis/0.8.30/OptimismTargetDispenserL2.json",
+        "address": "0xaea9ef993d8a1A164397642648DF43F053d43D85"
+      }
+    ]
+  },
+  {
+    "name": "base",
+    "chainId": "8453",
+    "contracts": [
+      {
+        "name": "OptimismTargetDispenserL2",
+        "artifact": "abis/0.8.30/OptimismTargetDispenserL2.json",
+        "address": "0x9Ec97Be9FF55ff11606ce7c589956f7Bf3D0b241"
+      },
+      {
+        "name": "BalancerPriceOracle",
+        "artifact": "abis/0.8.28/BalancerPriceOracle.json",
+        "address": "0x586D916819d9B707101f81e4cDD22cE119D1C220"
+      },
+      {
+        "name": "BuyBackBurnerBalancer",
+        "artifact": "abis/0.8.28/BuyBackBurnerBalancer.json",
+        "address": "0xEea5F1e202dc43607273d54101fF8b58FB008A99"
+      },
+      {
+        "name": "BuyBackBurnerProxy",
+        "artifact": "abis/0.8.28/BuyBackBurnerProxy.json",
+        "address": "0x3FD8C757dE190bcc82cF69Df3Cd9Ab15bCec1426"
+      }
+    ]
+  },
+  {
+    "name": "celo",
+    "chainId": "42220",
+    "contracts": [
+      {
+        "name": "WormholeTargetDispenserL2",
+        "artifact": "abis/0.8.30/WormholeTargetDispenserL2.json",
+        "address": "0x22bE6fDcd3e29851B29b512F714C328A00A96B83"
+      }
+    ]
+  },
+  {
+    "name": "mode",
+    "chainId": "34443",
+    "contracts": [
+      {
+        "name": "OptimismTargetDispenserL2",
+        "artifact": "abis/0.8.30/OptimismTargetDispenserL2.json",
+        "address": "0xEB5638eefE289691EcE01943f768EDBF96258a80"
+      }
+    ]
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "contractVerification": true,
+  "useLedger": false,
+  "derivationPath": "m/44'/60'/2'/0/0",
+  "providerName": "arbitrumSepolia",
+  "chainId": "421614",
+  "networkURL": "https://sepolia-rollup.arbitrum.io/rpc",
+  "blockscoutURL": "https://arbitrum-sepolia.blockscout.com",
+  "gasPriceInGwei": "5",
+  "olasAddress": "0x2AeD71638128A3811F5e5971a397fFe6A8587caa",
+  "serviceStakingFactoryAddress": "0xd64Cf67500b7d15A41E02DDeb40F3A73CB533eB5",
+  "timelockAddress": "0x52370eE170c0E2767B32687166791973a0dE7966",
+  "arbitrumArbSysAddress": "0x0000000000000000000000000000000000000064",
+  "arbitrumDepositProcessorL1Address": "0x6D2C09cC776DD807F1B496333e0d4e92B045F35c",
+  "l1ChainId": "11155111",
+  "arbitrumTargetDispenserL2Address": "0x3f229D2C80440E4C5fD6538444814298D9b7f01f"
+}

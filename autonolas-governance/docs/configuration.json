@@ -1,0 +1,139 @@
+[
+  {
+    "name": "mainnet",
+    "chainId": "1",
+    "contracts": [
+      {
+        "name": "OLAS",
+        "artifact": "abis/0.8.15/OLAS.json",
+        "address": "0x0001A500A6B18995B03f44bb040A5fFc28E45CB0"
+      },
+      {
+        "name": "Timelock",
+        "artifact": "abis/0.8.15/Timelock.json",
+        "address": "0x3C1fF68f5aa342D296d4DEe4Bb1cACCA912D95fE"
+      },
+      {
+        "name": "veOLAS",
+        "artifact": "abis/0.8.15/veOLAS.json",
+        "address": "0x7e01A500805f8A52Fad229b3015AD130A332B7b3"
+      },
+      {
+        "name": "buOLAS",
+        "artifact": "abis/0.8.15/buOLAS.json",
+        "address": "0xb09CcF0Dbf0C178806Aaee28956c74bd66d21f73"
+      },
+      {
+        "name": "wveOLAS",
+        "artifact": "abis/0.8.19/wveOLAS.json",
+        "address": "0x4039B809E0C0Ad04F6Fc880193366b251dDf4B40"
+      },
+      {
+        "name": "GovernorOLAS",
+        "artifact": "abis/0.8.20/GovernorOLAS.json",
+        "address": "0x8e84b5055492901988b831817e4ace5275a3b401"
+      },
+      {
+        "name": "VoteWeighting",
+        "artifact": "abis/0.8.25/VoteWeighting.json",
+        "address": "0x95418b46d5566D3d1ea62C12Aea91227E566c5c1"
+      },
+      {
+        "name": "Burner",
+        "artifact": "abis/0.8.28/Burner.json",
+        "address": "0x51eb65012ca5cEB07320c497F4151aC207FEa4E0"
+      },
+      {
+        "name": "GuardCM",
+        "artifact": "abis/0.8.23/GuardCM.json",
+        "address": "0x7bB7998b210cFfE10ca1e41f16341Abe53f76f3a"
+      },
+      {
+        "name": "BridgedERC20",
+        "artifact": "abis/0.8.23/BridgedERC20.json",
+        "address": "0x06512E620A8317da51a73690A596Aca97287b31D"
+      },
+      {
+        "name": "FxERC20RootTunnel",
+        "artifact": "abis/0.8.23/FxERC20RootTunnel.json",
+        "address": "0x1737408def992AF04b29C8Ba4BBcD7397B08c930"
+      }
+    ]
+  },
+  {
+    "name": "polygon",
+    "chainId": "137",
+    "contracts": [
+      {
+        "name": "FxGovernorTunnel",
+        "artifact": "abis/0.8.19/FxGovernorTunnel.json",
+        "address": "0x9338b5153AE39BB89f50468E608eD9d764B755fD"
+      },
+      {
+        "name": "FxERC20ChildTunnel",
+        "artifact": "abis/0.8.23/FxERC20ChildTunnel.json",
+        "address": "0x1fe74A08ac89300B102AdCd474C721AE8764E850"
+      }
+    ]
+  },
+  {
+    "name": "gnosis",
+    "chainId": "100",
+    "contracts": [
+      {
+        "name": "HomeMediator",
+        "artifact": "abis/0.8.19/HomeMediator.json",
+        "address": "0x15bd56669F57192a97dF41A2aa8f4403e9491776"
+      }
+    ]
+  },
+  {
+    "name": "optimism",
+    "chainId": "10",
+    "contracts": [
+      {
+        "name": "OptimismMessenger",
+        "artifact": "abis/0.8.23/OptimismMessenger.json",
+        "address": "0x87c511c8aE3fAF0063b3F3CF9C6ab96c4AA5C60c"
+      }
+    ]
+  },
+  {
+    "name": "base",
+    "chainId": "8453",
+    "contracts": [
+      {
+        "name": "OptimismMessenger",
+        "artifact": "abis/0.8.23/OptimismMessenger.json",
+        "address": "0xE49CB081e8d96920C38aA7AB90cb0294ab4Bc8EA"
+      }
+    ]
+  },
+  {
+    "name": "celo",
+    "chainId": "42220",
+    "contracts": [
+      {
+        "name": "WormholeMessenger",
+        "artifact": "abis/0.8.23/WormholeMessenger.json",
+        "address": "0x397125902ED2cA2d42104F621f448A2cE1bC8Fb7"
+      },
+      {
+        "name": "OptimismMessenger",
+        "artifact": "abis/0.8.30/OptimismMessenger.json",
+        "address": "0xC14E191A64a7FB0e5790a8a0B9a58683dFFce04d"
+      }
+    ]
+  },
+  {
+    "name": "mode",
+    "chainId": "34443",
+    "contracts": [
+      {
+        "name": "OptimismMessenger",
+        "artifact": "abis/0.8.28/OptimismMessenger.json",
+        "address": "0x9338b5153AE39BB89f50468E608eD9d764B755fD"
+      }
+    ]
+  }
+]

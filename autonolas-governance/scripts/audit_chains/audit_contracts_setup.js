@@ -1,0 +1,553 @@
+/*global process*/
+
+const { ethers } = require("ethers");
+const { expect } = require("chai");
+const fs = require("fs");
+
+const verifyRepo = true;
+const verifySetup = true;
+
+// Custom expect that is wrapped into try / catch block
+function customExpect(arg1, arg2, log) {
+    try {
+        expect(arg1).to.equal(arg2);
+    } catch (error) {
+        console.log(log);
+        if (error.status) {
+            console.error(error.status);
+            console.log("\n");
+        } else {
+            console.error(error);
+            console.log("\n");
+        }
+    }
+}
+
+// Custom expect for contain clause that is wrapped into try / catch block
+function customExpectContain(arg1, arg2, log) {
+    try {
+        expect(arg1).contain(arg2);
+    } catch (error) {
+        console.log(log);
+        if (error.status) {
+            console.error(error.status);
+            console.log("\n");
+        } else {
+            console.error(error);
+            console.log("\n");
+        }
+    }
+}
+
+// Check the bytecode
+async function checkBytecode(provider, configContracts, contractName, log) {
+    // Get the contract number from the set of configuration contracts
+    for (let i = 0; i < configContracts.length; i++) {
+        if (configContracts[i]["name"] === contractName) {
+            // Get the contract instance
+            const contractFromJSON = fs.readFileSync(configContracts[i]["artifact"], "utf8");
+            const parsedFile = JSON.parse(contractFromJSON);
+            // Forge JSON
+            let bytecode = parsedFile["deployedBytecode"]["object"];
+            if (bytecode === undefined) {
+                // Hardhat JSON
+                bytecode = parsedFile["deployedBytecode"];
+            }
+            const onChainCreationCode = await provider.getCode(configContracts[i]["address"]);
+
+            // Compare last 43 bytes as they reflect the deployed contract metadata hash
+            // We cannot compare the full one since the repo deployed bytecode does not contain immutable variable info
+            customExpectContain(onChainCreationCode, bytecode.slice(-86),
+                log + ", address: " + configContracts[i]["address"] + ", failed bytecode comparison");
+            return;
+        }
+    }
+}
+
+// Find the contract name from the configuration data
+async function findContractInstance(provider, configContracts, contractName) {
+    // Get the contract number from the set of configuration contracts
+    for (let i = 0; i < configContracts.length; i++) {
+        if (configContracts[i]["name"] === contractName) {
+            // Get the contract instance
+            const contractFromJSON = fs.readFileSync(configContracts[i]["artifact"], "utf8");
+            const parsedFile = JSON.parse(contractFromJSON);
+            const abi = parsedFile["abi"];
+            const contractInstance = new ethers.Contract(configContracts[i]["address"], abi, provider);
+            return contractInstance;
+        }
+    }
+}
+
+// Check OLAS: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkOLAS(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const olas = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + olas.address;
+    // Check owner
+    const owner = await olas.owner();
+    customExpect(owner, globalsInstance["timelockAddress"], log + ", function: owner()");
+
+    // Check minter
+    const manager = await olas.minter();
+    customExpect(manager, globalsInstance["treasuryAddress"], log + ", function: minter()");
+}
+
+// Check Timelock: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkTimelock(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const timelock = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + timelock.address;
+    // Check roles
+    const adminRole = ethers.utils.id("TIMELOCK_ADMIN_ROLE");
+    const proposerRole = ethers.utils.id("PROPOSER_ROLE");
+    const executorRole = ethers.utils.id("EXECUTOR_ROLE");
+    const cancellerRole = ethers.utils.id("CANCELLER_ROLE");
+
+    // All must be true for the governor
+    let res = await timelock.hasRole(adminRole, globalsInstance["governorTwoAddress"]);
+    customExpect(res, true, log + ", function: hasRole(adminRole)");
+    res = await timelock.hasRole(proposerRole, globalsInstance["governorTwoAddress"]);
+    customExpect(res, true, log + ", function: hasRole(proposerRole)");
+    res = await timelock.hasRole(executorRole, globalsInstance["governorTwoAddress"]);
+    customExpect(res, true, log + ", function: hasRole(executorRole)");
+    res = await timelock.hasRole(cancellerRole, globalsInstance["governorTwoAddress"]);
+    customExpect(res, true, log + ", function: hasRole(cancellerRole)");
+
+    // CM must have all the roles except for the admin one
+    res = await timelock.hasRole(adminRole, globalsInstance["CM"]);
+    customExpect(res, false, log + ", function: hasRole(adminRole)");
+    res = await timelock.hasRole(proposerRole, globalsInstance["CM"]);
+    customExpect(res, true, log + ", function: hasRole(proposerRole)");
+    res = await timelock.hasRole(executorRole, globalsInstance["CM"]);
+    customExpect(res, true, log + ", function: hasRole(executorRole)");
+    res = await timelock.hasRole(cancellerRole, globalsInstance["CM"]);
+    customExpect(res, false, log + ", function: hasRole(cancellerRole)");
+
+    // Timelock has the admin role as well
+    res = await timelock.hasRole(adminRole, globalsInstance["timelockAddress"]);
+    customExpect(res, true, log + ", function: hasRole(adminRole)");
+
+    // Check timelock min delay
+    res = await timelock.getMinDelay();
+    customExpect(res.toString(), globalsInstance["timelockMinDelay"], log + ", function: hasRole(adminRole)");
+}
+
+// Check veOLAS: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkVEOLAS(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const veOLAS = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + veOLAS.address;
+    // Check current token
+    const token = await veOLAS.token();
+    customExpect(token, globalsInstance["olasAddress"], log + ", function: token()");
+
+}
+
+// Check buOLAS: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkBUOLAS(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const buOLAS = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + buOLAS.address;
+    // Check current token
+    const token = await buOLAS.token();
+    customExpect(token, globalsInstance["olasAddress"], log + ", function: token()");
+
+    // Check owner
+    const owner = await buOLAS.owner();
+    customExpect(owner, globalsInstance["timelockAddress"], log + ", function: owner()");
+}
+
+// Check wveOLAS: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkWrappedVEOLAS(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const wveOLAS = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + wveOLAS.address;
+    // Check current token
+    const token = await wveOLAS.token();
+    customExpect(token, globalsInstance["olasAddress"], log + ", function: token()");
+    
+    // Check ve
+    const ve = await wveOLAS.ve();
+    customExpect(ve, globalsInstance["veOLASAddress"], log + ", function: ve()");
+}
+
+// Check VoteWeighting: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkVoteWeighting(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const vw = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + vw.address;
+    // Check current token
+    const ve = await vw.ve();
+    customExpect(ve, globalsInstance["veOLASAddress"], log + ", function: ve()");
+
+    // Check owner
+    const owner = await vw.owner();
+    customExpect(owner, globalsInstance["timelockAddress"], log + ", function: owner()");
+}
+
+// Check GolvernorOLAS: chain Id, provider, parsed globals, mainnet globals, configuration contracts, contract name
+async function checkGovernorOLAS(chainId, provider, globalsInstance, globalsMainnet, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const governor = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + governor.address;
+    // Check current token
+    const token = await governor.token();
+    customExpect(token, globalsInstance["wveOLASAddress"], log + ", function: token()");
+
+    // Check timelock
+    const timelock = await governor.timelock();
+    customExpect(timelock, globalsInstance["timelockAddress"], log + ", function: timelock()");
+
+    // Check version
+    const version = await governor.version();
+    customExpect(version, "1", log + ", function: version()");
+
+    // Value below need to be in sync with mainnet
+    // Check quorumNumerator
+    const quorumNumerator = await governor["quorumNumerator()"]();
+    customExpect(quorumNumerator.toString(), globalsMainnet["quorum"], log + ", function: quorumNumerator()");
+
+    // Check votingDelay
+    const vDelay = await governor.votingDelay();
+    customExpect(vDelay.toString(), globalsMainnet["initialVotingDelay"], log + ", function: votingDelay()");
+
+    // Check quorumNumerator
+    const vPeriod = await governor.votingPeriod();
+    customExpect(vPeriod.toString(), globalsMainnet["initialVotingPeriod"], log + ", function: votingPeriod()");
+}
+
+// Check GuardCM: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkGuardCM(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const guard = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + guard.address;
+    // Check governor
+    const governor = await guard.governor();
+    customExpect(governor, globalsInstance["governorTwoAddress"], log + ", function: governor()");
+
+    // Check timelock to be the owner
+    const timelock = await guard.owner();
+    customExpect(timelock, globalsInstance["timelockAddress"], log + ", function: owner()");
+
+    // Check multisig to be the CM
+    const multisig = await guard.multisig();
+    customExpect(multisig, globalsInstance["CM"], log + ", function: multisig()");
+}
+
+// Check bridgedERC20: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkBridgedERC20(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const bridgedERC20 = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + bridgedERC20.address;
+    // Check the owner
+    const owner = await bridgedERC20.owner();
+    customExpect(owner, globalsInstance["fxERC20RootTunnelAddress"], log + ", function: owner()");
+}
+
+// Check FxGovernorTunnel: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkFxGovernorTunnel(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const fxGovernorTunnel = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + fxGovernorTunnel.address;
+    // Check the root governor
+    const rootGovernor = await fxGovernorTunnel.rootGovernor();
+    customExpect(rootGovernor, globalsInstance["timelockAddress"], log + ", function: rootGovernor()");
+
+    // Check fxChild
+    const fxChild = await fxGovernorTunnel.fxChild();
+    customExpect(fxChild, globalsInstance["fxChildAddress"], log + ", function: fxChild()");
+}
+
+// Check FxERC20ChildTunnel: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkFxERC20ChildTunnel(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const fxERC20ChildTunnel = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + fxERC20ChildTunnel.address;
+    // Check the child token
+    const childToken = await fxERC20ChildTunnel.childToken();
+    customExpect(childToken, globalsInstance["childTokenAddress"], log + ", function: childToken()");
+
+    // Check the root token
+    const rootToken = await fxERC20ChildTunnel.rootToken();
+    customExpect(rootToken, globalsInstance["bridgedERC20Address"], log + ", function: rootToken()");
+
+    // Check fxChild
+    const fxChild = await fxERC20ChildTunnel.fxChild();
+    customExpect(fxChild, globalsInstance["fxChildAddress"], log + ", function: fxChild()");
+
+    // Check the fxRootTunnel
+    const fxRootTunnel = await fxERC20ChildTunnel.fxRootTunnel();
+    customExpect(fxRootTunnel, globalsInstance["fxERC20RootTunnelAddress"], log + ", function: fxRootTunnel()");
+}
+
+// Check FxERC20RootTunnel: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkFxERC20RootTunnel(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const fxERC20RootTunnel = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + fxERC20RootTunnel.address;
+    // Check the child token
+    const childToken = await fxERC20RootTunnel.childToken();
+    customExpect(childToken, globalsInstance["childTokenAddress"], log + ", function: childToken()");
+
+    // Check the root token
+    const rootToken = await fxERC20RootTunnel.rootToken();
+    customExpect(rootToken, globalsInstance["bridgedERC20Address"], log + ", function: rootToken()");
+
+    // Check fxRoot
+    const fxRoot = await fxERC20RootTunnel.fxRoot();
+    customExpect(fxRoot, globalsInstance["fxRootAddress"], log + ", function: fxChild()");
+
+    // Check the fxChildTunnel
+    const fxChildTunnel = await fxERC20RootTunnel.fxChildTunnel();
+    customExpect(fxChildTunnel, globalsInstance["fxERC20ChildTunnelAddress"], log + ", function: fxChildTunnel()");
+
+    // Check the checkpointManager
+    const checkpointManager = await fxERC20RootTunnel.checkpointManager();
+    customExpect(checkpointManager, globalsInstance["checkpointManagerAddress"], log + ", function: checkpointManager()");
+}
+
+// Check HomeMediator: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkHomeMediator(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const homeMediator = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + homeMediator.address;
+    // Check the foreign governor
+    const foreignGovernor = await homeMediator.foreignGovernor();
+    customExpect(foreignGovernor, globalsInstance["timelockAddress"], log + ", function: foreignGovernor()");
+
+    // Check AMBContractProxyHomeAddress
+    const proxyHome = await homeMediator.AMBContractProxyHome();
+    customExpect(proxyHome, globalsInstance["AMBContractProxyHomeAddress"], log + ", function: AMBContractProxyHome()");
+}
+
+// Check OptimismMessenger: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkOptimismMessenger(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const optimismMessenger = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + optimismMessenger.address;
+    // Check the foreign governor
+    const sourceGovernor = await optimismMessenger.sourceGovernor();
+    customExpect(sourceGovernor, globalsInstance["timelockAddress"], log + ", function: sourceGovernor()");
+
+    // Check L2CrossDomainMessengerAddress
+    const proxyHome = await optimismMessenger.CDMContractProxyHome();
+    customExpect(proxyHome, globalsInstance["L2CrossDomainMessengerAddress"], log + ", function: CDMContractProxyHome()");
+}
+
+// Check WormholeMessenger: chain Id, provider, parsed globals, configuration contracts, contract name
+async function checkWormholeMessenger(chainId, provider, globalsInstance, configContracts, contractName, log) {
+    // Check the bytecode
+    await checkBytecode(provider, configContracts, contractName, log);
+
+    // Get the contract instance
+    const wormholeMessenger = await findContractInstance(provider, configContracts, contractName);
+
+    log += ", address: " + wormholeMessenger.address;
+    // Check the source governor
+    const sourceGovernor = await wormholeMessenger.sourceGovernor();
+    customExpect(sourceGovernor, globalsInstance["timelockAddress"].toLowerCase(), log + ", function: sourceGovernor()");
+
+    // Check L2WormholeRelayerAddress
+    const wormholeRelayer = await wormholeMessenger.wormholeRelayer();
+    customExpect(wormholeRelayer, globalsInstance["L2WormholeRelayerAddress"], log + ", function: wormholeRelayer()");
+
+    // Check source governor chain Id
+    const sourceGovernorChainId = await wormholeMessenger.sourceGovernorChainId();
+    customExpect(sourceGovernorChainId.toString(), globalsInstance["sourceGovernorChainId"], log + ", function: sourceGovernorChainId()");
+}
+
+async function main() {
+    // Check for the API keys
+    if (!process.env.ALCHEMY_API_KEY_MAINNET || !process.env.ALCHEMY_API_KEY_SEPOLIA ||
+        !process.env.ALCHEMY_API_KEY_MATIC || !process.env.ALCHEMY_API_KEY_AMOY) {
+        console.log("Check API keys!");
+        return;
+    }
+
+    // Read configuration from the JSON file
+    const configFile = "docs/configuration.json";
+    const dataFromJSON = fs.readFileSync(configFile, "utf8");
+    const configs = JSON.parse(dataFromJSON);
+
+    const numChains = configs.length;
+    // ################################# VERIFY CONTRACTS WITH REPO #################################
+    if (verifyRepo) {
+        console.log("\nVerifying deployed contracts vs the repo... If no error is output, then the contracts are correct.");
+
+        // Traverse all chains
+        for (let i = 0; i < numChains; i++) {
+            console.log("\n\nNetwork:", configs[i]["name"]);
+            const contracts = configs[i]["contracts"];
+            const chainId = configs[i]["chainId"];
+            console.log("chainId", chainId);
+
+            // Verify contracts
+            for (let j = 0; j < contracts.length; j++) {
+                console.log("Checking " + contracts[j]["name"]);
+                const execSync = require("child_process").execSync;
+                try {
+                    execSync("scripts/audit_chains/audit_repo_contract.sh " + chainId + " " + contracts[j]["name"] + " " + contracts[j]["address"]);
+                } catch (err) {
+                    err.stderr.toString();
+                }
+            }
+        }
+    }
+    // ################################# /VERIFY CONTRACTS WITH REPO #################################
+
+    // ################################# VERIFY CONTRACTS SETUP #################################
+    if (verifySetup) {
+        const globalNames = {
+            "mainnet": "scripts/deployment/globals_mainnet.json",
+            "polygon": "scripts/deployment/bridges/polygon/globals_polygon_mainnet.json",
+            "gnosis": "scripts/deployment/bridges/gnosis/globals_gnosis_mainnet.json",
+            "optimism": "scripts/deployment/bridges/optimism/globals_optimism_mainnet.json",
+            "base": "scripts/deployment/bridges/optimism/globals_base_mainnet.json",
+            "celo": "scripts/deployment/bridges/optimism/globals_celo_mainnet.json",
+            "mode": "scripts/deployment/bridges/optimism/globals_mode_mainnet.json"
+        };
+
+        const providerLinks = {
+            "mainnet": "https://eth-mainnet.g.alchemy.com/v2/" + process.env.ALCHEMY_API_KEY_MAINNET,
+            "polygon": "https://polygon-mainnet.g.alchemy.com/v2/" + process.env.ALCHEMY_API_KEY_MATIC,
+            "gnosis": "https://rpc.gnosischain.com",
+            "optimism": "https://optimism.drpc.org",
+            "base": "https://mainnet.base.org",
+            "celo": "https://forno.celo.org",
+            "mode": "https://mainnet.mode.network"
+        };
+
+        // Get all the globals processed
+        const globals = new Array();
+        const providers = new Array();
+        for (let i = 0; i < numChains; i++) {
+            const dataJSON = fs.readFileSync(globalNames[configs[i]["name"]], "utf8");
+            globals.push(JSON.parse(dataJSON));
+            const provider = new ethers.providers.JsonRpcProvider(providerLinks[configs[i]["name"]]);
+            providers.push(provider);
+        }
+
+        console.log("\nVerifying deployed contracts setup... If no error is output, then the contracts are correct.");
+
+        // L1 contracts
+        console.log("\n######## Verifying setup on CHAIN ID", configs[0]["chainId"]);
+
+        const initLog = "ChainId: " + configs[0]["chainId"] + ", network: " + configs[0]["name"];
+
+        let log = initLog + ", contract: " + "OLAS";
+        await checkOLAS(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "OLAS", log);
+
+        log = initLog + ", contract: " + "Timelock";
+        await checkTimelock(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "Timelock", log);
+
+        log = initLog + ", contract: " + "veOLAS";
+        await checkVEOLAS(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "veOLAS", log);
+
+        log = initLog + ", contract: " + "buOLAS";
+        await checkBUOLAS(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "buOLAS", log);
+
+        log = initLog + ", contract: " + "wveOLAS";
+        await checkWrappedVEOLAS(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "wveOLAS", log);
+
+        log = initLog + ", contract: " + "VoteWeighting";
+        await checkVoteWeighting(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "VoteWeighting", log);
+
+        log = initLog + ", contract: " + "GovernorOLAS";
+        await checkGovernorOLAS(configs[0]["chainId"], providers[0], globals[0], globals[0], configs[0]["contracts"], "GovernorOLAS", log);
+
+        log = initLog + ", contract: " + "GuardCM";
+        await checkGuardCM(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "GuardCM", log);
+
+        log = initLog + ", contract: " + "BridgedERC20";
+        await checkBridgedERC20(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "BridgedERC20", log);
+
+        log = initLog + ", contract: " + "FxERC20RootTunnel";
+        await checkFxERC20RootTunnel(configs[0]["chainId"], providers[0], globals[0], configs[0]["contracts"], "FxERC20RootTunnel", log);
+
+        // L2 contracts
+        for (let i = 1; i < numChains; i++) {
+            console.log("\n######## Verifying setup on CHAIN ID", configs[i]["chainId"]);
+
+            const initLog = "ChainId: " + configs[i]["chainId"] + ", network: " + configs[i]["name"];
+
+            if (configs[i]["chainId"] == "137") {
+                let log = initLog + ", contract: " + "FxGovernorTunnel";
+                await checkFxGovernorTunnel(configs[i]["chainId"], providers[i], globals[i], configs[i]["contracts"], "FxGovernorTunnel", log);
+
+                log = initLog + ", contract: " + "FxERC20ChildTunnel";
+                await checkFxERC20ChildTunnel(configs[i]["chainId"], providers[i], globals[i], configs[i]["contracts"], "FxERC20ChildTunnel", log);
+            } else if (configs[i]["chainId"] == "100") {
+                let log = initLog + ", contract: " + "HomeMediator";
+                await checkHomeMediator(configs[i]["chainId"], providers[i], globals[i], configs[i]["contracts"], "HomeMediator", log);
+            } else if (configs[i]["chainId"] == "10" || configs[i]["chainId"] == "8453" || configs[i]["chainId"] == "34443" || configs[i]["chainId"] == "42220") {
+                let log = initLog + ", contract: " + "OptimismMessenger";
+                await checkOptimismMessenger(configs[i]["chainId"], providers[i], globals[i], configs[i]["contracts"], "OptimismMessenger", log);
+            }
+        }
+    }
+    // ################################# /VERIFY CONTRACTS SETUP #################################
+}
+
+main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });

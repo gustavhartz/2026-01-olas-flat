@@ -1,0 +1,18 @@
+out
+out_static_audit
+node_modules
+.env
+coverage
+coverage.json
+typechain
+*.DS_Store
+.idea
+leak_report
+
+# Hardhat files
+cache
+artifacts
+
+# Audit related files
+audits/*/analysis/slither_data-dependency.txt
+audits/*/analysis/slither_function-summary.txt
